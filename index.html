@@ -1,0 +1,135 @@
+<html>	
+	<head>
+		<title>player</title>
+		<link rel='stylesheet' href='css/player.css' type='text/css'>
+	</head>
+	<body>
+	
+
+	
+	<table id='myPlayer'>
+		<tr>
+			<th rowspan="2" > 
+				<audio id='audio' src='sound/som.mp3' type='audio/mp3' class='newPlayer'></audio>
+				<img src='img/mic.png' />
+			</th>
+			<td><input type='range' id='barraProgressoPlayer' min='0' max='0' value='0'></td>
+		</tr>		
+		<tr>		
+			<td><span id='btPlayer' class='loadPlayer'></span><span id='tempoAtualPlayer'>00:00:00</span> / <span id='tempoTotalPlayer'>00:00:00</span></td>
+		</tr>
+	</table>
+	
+	</body>
+</html>
+<script src="jquery_code.js"></script>
+<script>
+
+    var audio;
+	var tempoAtual
+	var progresso;
+	
+	function tempoTotalPlayer(){
+		var audioVetor = [];
+		var erroAudioN = 0;
+		$('body .newPlayer').each(function(i, value){
+			audioVetor.push($(this));
+			$(this).removeClass();
+			
+			$(this).get(0).onerror = function(){
+				$(this).parents('#myPlayer').find('#tempoTotalPlayer').text('ERRO');
+				$(this).parents('#myPlayer').find('#btPlayer').attr('class','errorPlayer');
+				erroAudioN++;
+			};
+		 })
+		 
+		eachvetoraudio(audioVetor);
+		
+		function eachvetoraudio(vetor){
+		
+			var newvetor = [];
+			var ierros = [];
+			
+			 $.each(vetor,function(i,value){
+			
+				audio = value.get(0);
+
+				 if(audio.duration > 0 ){
+					value.parents('#myPlayer').find('#tempoTotalPlayer').text(secToStr(audio.duration));
+					value.parents('#myPlayer').find('#btPlayer').attr('class','playPlayer');
+				 }else if( erroAudioN < vetor.length)
+					newvetor.push(value);
+				
+				console.log('load '+erroAudioN+' < '+vetor.length);
+			 });	
+			 setTimeout(function(){
+
+				 if(newvetor.length > 0)
+					eachvetoraudio(newvetor);
+			},2000)
+		}	
+	}
+	
+	tempoTotalPlayer();
+
+    $('body').delegate('#btPlayer,#pausePlayer','click',function(){
+	
+		audio = $(this).parents('#myPlayer').find('audio').get(0);
+		
+		if(	audio.readyState != 0){
+		
+			tempoAtual = $(this).parents('#myPlayer').find('#tempoAtualPlayer');
+			tempoTotal = $(this).parents('#myPlayer').find('#tempoTotalPlayer');
+			progresso = $(this).parents('#myPlayer').find('#barraProgressoPlayer');	
+			
+			if(audio.paused){
+				audio.play();
+				audio.addEventListener('play', play_evento , false);
+				audio.addEventListener('timeupdate', atualizar , false);
+				$(this).attr('class','pausePlayer');
+			}else{
+				audio.pause();
+				$(this).attr('class','playPlayer');
+			}
+		}
+	}).delegate('#barraProgressoPlayer','mousedown ',function(x){
+		 $(this).parents('#myPlayer').find('audio').get(0).pause();
+    }).delegate('#barraProgressoPlayer','click mouseup',function(x){
+		if($(this).attr('max')>0){
+			$(this).parents('#myPlayer').find('audio').get(0).play();
+			audio = $(this).parents('#myPlayer').find('audio').get(0);
+			var value = ($(this).val()/100);
+			audio.currentTime = value;
+		}
+    });
+ 
+    function play_evento(){
+       tempoAtual.text(secToStr( audio.currentTime));
+       tempoTotal.text(secToStr(audio.duration));
+       progresso.attr('max',audio.duration * 100 );
+       progresso.val(audio.currentTime);
+    }
+ 
+    function atualizar(){
+        tempoAtual.text(secToStr( audio.currentTime));
+        progresso.val(audio.currentTime * 100);
+		audio.onended = function(){
+			audio.currentTime = 0;
+			 progresso.val(0);
+		}
+    }
+ 
+    function secToStr( sec_num ) {
+        sec_num = Math.floor( sec_num );
+        var horas = Math.floor(sec_num / 3600);
+        var minutos = Math.floor((sec_num - (horas * 3600)) / 60);
+        var segundos = sec_num - (horas * 3600) - (minutos * 60);
+         
+        if (horas < 10)  horas = "0"+horas;
+        if (minutos < 10)  minutos = "0"+minutos;
+        if (segundos < 10) segundos = "0"+segundos;
+         
+        var tempo = horas+':'+minutos+':'+segundos;
+        return tempo;
+    }
+</script>
